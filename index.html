@@ -1,0 +1,1015 @@
+<<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+  <title>Ventas Silenay · Control Diario y Mensual</title>
+  <!-- Librerías -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(145deg, #0b2f5c 0%, #1a4a7a 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem 0.8rem;
+    }
+
+    .sistema-ventas {
+      max-width: 1400px;
+      width: 100%;
+      background: #0a3d6b;
+      border-radius: 24px;
+      box-shadow: 0 20px 35px rgba(0, 10, 30, 0.7), inset 0 1px 3px rgba(255, 255, 255, 0.1);
+      padding: 1.2rem 1.2rem 1.5rem;
+      border: 1px solid #2c699b;
+      margin: 0 auto;
+    }
+
+    .nombre-sistema {
+      font-size: clamp(1.8rem, 8vw, 2.8rem);
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #e5f0ff;
+      text-shadow: 4px 4px 0 #06203b, 0 2px 12px #7ab7ef;
+      margin-bottom: 0.5rem;
+      padding-left: 12px;
+      border-left: 8px solid #7fc3ff;
+      line-height: 1.2;
+    }
+
+    /* PESTAÑAS */
+    .tabs-container {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 1rem;
+      border-bottom: 2px solid #2f8ad4;
+    }
+
+    .tab-btn {
+      background: #0c2e52;
+      border: none;
+      color: #afd4ff;
+      font-weight: bold;
+      padding: 0.7rem 1.8rem;
+      border-radius: 12px 12px 0 0;
+      font-size: 1.1rem;
+      border: 1px solid #2f8ad4;
+      border-bottom: none;
+      cursor: pointer;
+      transition: 0.15s;
+      margin-right: 2px;
+    }
+
+    .tab-btn:hover {
+      background: #1a4a7a;
+      color: white;
+    }
+
+    .tab-btn.active {
+      background: #1b5685;
+      color: white;
+      border-bottom: 3px solid #ffd966;
+      transform: translateY(2px);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .barra-herramientas {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 12px 0 0;
+    }
+
+    .btn-accion {
+      background: #1b5685;
+      border: none;
+      color: white;
+      font-weight: bold;
+      padding: 0.6rem 1.3rem;
+      border-radius: 40px;
+      font-size: clamp(0.85rem, 2.8vw, 1rem);
+      border: 1px solid #70b8ff;
+      cursor: pointer;
+      box-shadow: 0 3px 0 #0b1f30;
+      transition: 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+      flex: 0 1 auto;
+    }
+
+    .btn-accion:hover {
+      background: #2f77b3;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 0 #0b1f30;
+    }
+
+    .btn-accion:active {
+      transform: translateY(1px);
+      box-shadow: 0 1px 0 #0b1f30;
+    }
+
+    .btn-agregar {
+      background: #0f6b3a;
+      border-color: #8bc9a1;
+    }
+
+    .btn-eliminar {
+      background: #8b1a1a;
+      border-color: #e87c7c;
+    }
+
+    .btn-eliminar:hover {
+      background: #b52a2a;
+      border-color: #f5a0a0;
+    }
+
+    .selector-dia {
+      background: #0c2e52;
+      color: #d9ecff;
+      padding: clamp(0.4rem, 1.2vw, 0.55rem) clamp(0.6rem, 1.5vw, 1rem);
+      border-radius: 30px;
+      border: 1px solid #3f8fd2;
+      font-weight: 600;
+      font-size: clamp(0.85rem, 2.5vw, 1rem);
+      cursor: pointer;
+      outline: none;
+    }
+
+    .fecha-hora {
+      background: #0c2e52;
+      padding: clamp(0.35rem, 1vw, 0.45rem) clamp(0.6rem, 1.5vw, 1rem);
+      border-radius: 30px;
+      font-weight: 600;
+      color: #d9ecff;
+      border: 1px solid #3f8fd2;
+      font-size: clamp(0.78rem, 2.3vw, 0.95rem);
+      white-space: nowrap;
+    }
+
+    .flex-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+    }
+
+    /* RESUMEN */
+    .resumen-box {
+      background: #0c2e52;
+      border-radius: 20px;
+      padding: clamp(0.6rem, 2vw, 1rem) clamp(0.6rem, 2vw, 1.2rem);
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.3), 0 6px 10px rgba(0, 20, 40, 0.6);
+      border: 1px solid #2e73a8;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: clamp(0.5rem, 1.5vw, 0.8rem);
+      margin-bottom: 1.2rem;
+      justify-items: center;
+    }
+
+    .resumen-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: white;
+    }
+
+    .resumen-item .etiqueta {
+      font-size: clamp(0.78rem, 2.5vw, 1.15rem);
+      font-weight: 600;
+      text-transform: uppercase;
+      color: #afd4ff;
+      white-space: nowrap;
+    }
+
+    .resumen-item .valor {
+      font-size: clamp(1.1rem, 4.5vw, 2.1rem);
+      font-weight: 800;
+      background: #041e33;
+      padding: 0.2rem 0.8rem;
+      border-radius: 40px;
+      box-shadow: inset 0 0 6px #00000066, 0 3px 0 #123a5a;
+      color: #e3f0ff;
+      min-width: clamp(70px, 12vw, 110px);
+      text-align: right;
+      border-bottom: 3px solid #3f9eff;
+    }
+
+    .ganancia .valor {
+      background: #083358;
+      border-bottom: 3px solid #ffd966;
+      color: #fff6d5;
+    }
+
+    /* TABLA */
+    .tabla-wrapper {
+      overflow-x: auto;
+      border-radius: 16px;
+      border: 2px solid #1b5f9c;
+      background: #063152;
+      box-shadow: inset 0 0 0 1px #2c7ab1, 0 12px 18px -8px #021a2b;
+      margin-bottom: 0;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .tabla-wrapper::-webkit-scrollbar {
+      height: 6px;
+    }
+    .tabla-wrapper::-webkit-scrollbar-track {
+      background: #063152;
+    }
+    .tabla-wrapper::-webkit-scrollbar-thumb {
+      background: #2f8ad4;
+      border-radius: 6px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 680px;
+      background: #0d3e64;
+      color: #f0f8ff;
+      table-layout: auto;
+    }
+
+    thead tr {
+      background: #0b2742;
+      border-bottom: 4px solid #2f8ad4;
+    }
+
+    th {
+      padding: 0.8rem 0.5rem;
+      font-size: clamp(0.9rem, 3.5vw, 1.2rem);
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #d9ecff;
+      border-right: 1px solid #1e5780;
+      text-align: center;
+    }
+
+    td {
+      padding: clamp(0.35rem, 1vw, 0.55rem) clamp(0.3rem, 0.8vw, 0.5rem);
+      text-align: right;
+      font-weight: 500;
+      border-right: 1px solid #1e5780;
+      color: #ebf5ff;
+      font-size: clamp(0.82rem, 2.5vw, 1rem);
+    }
+
+    td:first-child { text-align: left; padding-left: 0.8rem; }
+    td:last-child { border-right: none; text-align: left; }
+
+    .input-tabla, .input-producto, .input-codigo {
+      width: 100%;
+      background: #eef6ff;
+      border: 2px solid #1d72b8;
+      border-radius: 30px;
+      padding: clamp(0.35rem, 1vw, 0.5rem) clamp(0.5rem, 1.2vw, 0.7rem);
+      font-weight: 600;
+      font-size: clamp(0.82rem, 2.5vw, 0.9rem);
+      color: #04273e;
+      outline: none;
+      box-shadow: inset 0 2px 5px #0000001a, 0 1px 0 #a3c6e9;
+      min-width: 60px;
+    }
+
+    .input-tabla { text-align: right; }
+    .input-producto { text-align: left; }
+
+    .footer-ucinf {
+      margin-top: 1rem;
+      padding: clamp(0.6rem, 1.5vw, 0.8rem) clamp(0.6rem, 1.5vw, 1rem);
+      background: #072a44;
+      border-radius: 40px;
+      text-align: center;
+      font-size: clamp(0.78rem, 2.5vw, 1.15rem);
+      color: #b7dcff;
+      border-top: 2px solid #2875b9;
+    }
+
+    .footer-ucinf strong { color: #ffecb3; }
+
+    /* ===== MODAL DE CONFIRMACIÓN ===== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.65);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+    }
+
+    .modal-overlay.visible {
+      display: flex;
+    }
+
+    .modal-box {
+      background: #0c2e52;
+      border: 2px solid #e87c7c;
+      border-radius: 20px;
+      padding: 2rem 1.8rem;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+      text-align: center;
+      animation: modalIn 0.25s ease;
+    }
+
+    @keyframes modalIn {
+      from { transform: scale(0.85); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-icon {
+      font-size: 3rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .modal-title {
+      color: #ff9999;
+      font-size: 1.4rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+    }
+
+    .modal-message {
+      color: #c0d8f0;
+      font-size: 1rem;
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .modal-btn {
+      padding: 0.65rem 1.6rem;
+      border-radius: 40px;
+      font-weight: 700;
+      font-size: 1rem;
+      border: none;
+      cursor: pointer;
+      transition: 0.15s ease;
+    }
+
+    .modal-btn-cancel {
+      background: #1b5685;
+      color: white;
+      border: 1px solid #70b8ff;
+    }
+    .modal-btn-cancel:hover {
+      background: #2f77b3;
+    }
+
+    .modal-btn-confirm {
+      background: #c0392b;
+      color: white;
+      border: 1px solid #e74c3c;
+    }
+    .modal-btn-confirm:hover {
+      background: #e74c3c;
+    }
+
+    /* ===== ESTILOS ESPECÍFICOS PARA PDF (fondo blanco, sin cortes) ===== */
+    .pdf-export {
+      background: white !important;
+      padding: 10px !important;
+    }
+
+    .pdf-export .sistema-ventas {
+      background: white !important;
+      box-shadow: none !important;
+      border: none !important;
+      padding: 0 !important;
+    }
+
+    .pdf-export .nombre-sistema {
+      color: #0b2f5c !important;
+      text-shadow: none !important;
+      border-left-color: #0b2f5c !important;
+    }
+
+    .pdf-export .tabs-container,
+    .pdf-export .barra-herramientas,
+    .pdf-export .btn-accion,
+    .pdf-export .selector-dia,
+    .pdf-export .fecha-hora,
+    .pdf-export .modal-overlay {
+      display: none !important; /* Ocultar botones y selectores en PDF */
+    }
+
+    .pdf-export .resumen-box {
+      background: #f0f0f0 !important;
+      border: 1px solid #ccc !important;
+      box-shadow: none !important;
+      color: black !important;
+    }
+
+    .pdf-export .resumen-item .etiqueta {
+      color: #0b2f5c !important;
+    }
+
+    .pdf-export .resumen-item .valor {
+      background: white !important;
+      box-shadow: none !important;
+      border: 1px solid #999 !important;
+      color: black !important;
+    }
+
+    .pdf-export .tabla-wrapper {
+      background: white !important;
+      border: 1px solid #999 !important;
+      box-shadow: none !important;
+    }
+
+    .pdf-export table {
+      background: white !important;
+      color: black !important;
+      min-width: 100% !important;
+      table-layout: fixed !important;  /* Evita desbordamiento */
+    }
+
+    .pdf-export th {
+      background: #0b2742 !important;
+      color: white !important;
+      border: 1px solid #2f8ad4 !important;
+      font-size: 12px !important;
+      padding: 6px 4px !important;
+    }
+
+    .pdf-export td {
+      background: white !important;
+      color: black !important;
+      border: 1px solid #999 !important;
+      font-size: 11px !important;
+      padding: 4px !important;
+    }
+
+    .pdf-export .input-tabla,
+    .pdf-export .input-producto,
+    .pdf-export .input-codigo {
+      background: transparent !important;
+      border: none !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      color: black !important;
+      font-size: 11px !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      width: 100% !important;
+      -webkit-appearance: none !important;
+      appearance: none !important;
+      pointer-events: none !important; /* Evita interacción en PDF */
+    }
+
+    .pdf-export .footer-ucinf {
+      background: #f0f0f0 !important;
+      color: #0b2f5c !important;
+      border-top: 1px solid #ccc !important;
+    }
+
+    /* Ajuste de anchos de columna para que quepan en landscape */
+    .pdf-export #tablaDiario th:nth-child(1),
+    .pdf-export #tablaDiario td:nth-child(1) { width: 40% !important; }
+    .pdf-export #tablaDiario th:nth-child(2),
+    .pdf-export #tablaDiario td:nth-child(2) { width: 20% !important; }
+    .pdf-export #tablaDiario th:nth-child(3),
+    .pdf-export #tablaDiario td:nth-child(3) { width: 20% !important; }
+    .pdf-export #tablaDiario th:nth-child(4),
+    .pdf-export #tablaDiario td:nth-child(4) { width: 20% !important; }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 900px) {
+      body { padding: 0.6rem 0.4rem; justify-content: flex-start; }
+      .sistema-ventas { padding: 0.9rem 0.7rem 1.1rem; border-radius: 20px; }
+      .nombre-sistema { margin-bottom: 0.4rem; padding-left: 10px; border-left-width: 6px; }
+      .resumen-box { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 600px) {
+      body { padding: 0.4rem 0.2rem; }
+      .sistema-ventas { padding: 0.7rem 0.5rem 0.9rem; border-radius: 16px; }
+      .nombre-sistema { margin-bottom: 0.35rem; padding-left: 8px; border-left-width: 5px; }
+      .tab-btn { padding: 0.45rem 0.7rem; font-size: 0.9rem; border-radius: 10px 10px 0 0; }
+      .flex-header { flex-direction: column; align-items: stretch; gap: 6px; }
+      .fecha-hora { text-align: center; display: block; margin: 0 auto; }
+      .barra-herramientas { justify-content: center; gap: 6px; }
+      .btn-accion { padding: 0.5rem 0.9rem; font-size: 0.82rem; }
+      table { min-width: 480px; }
+    }
+
+    @media (max-width: 400px) {
+      .sistema-ventas { padding: 0.5rem 0.35rem 0.7rem; border-radius: 14px; }
+      .nombre-sistema { padding-left: 6px; border-left-width: 4px; }
+      .tab-btn { padding: 0.38rem 0.55rem; font-size: 0.82rem; gap: 3px; }
+      .resumen-item .etiqueta { font-size: 0.7rem; }
+      .resumen-item .valor { font-size: clamp(1rem, 5vw, 1.3rem); min-width: 65px; padding: 0.15rem 0.5rem; }
+      .btn-accion { padding: 0.42rem 0.6rem; font-size: 0.76rem; gap: 3px; border-radius: 30px; }
+      table { min-width: 400px; }
+    }
+
+    @media (min-width: 601px) {
+      .btn-accion .btn-label-short { display: none; }
+    }
+    @media (max-width: 600px) {
+      .btn-accion .btn-label-long { display: none; }
+    }
+
+    /* Pantallas muy grandes */
+    @media (min-width: 1600px) {
+      .sistema-ventas { padding: 1.8rem 2rem 2rem; }
+      .resumen-box { gap: 1.5rem; padding: 1rem 1.8rem; grid-template-columns: repeat(3, 1fr); }
+      .resumen-item .valor { font-size: 2.4rem; min-width: 140px; }
+    }
+
+    /* Pantallas extra pequeñas */
+    @media (max-width: 320px) {
+      .sistema-ventas { padding: 0.4rem 0.25rem 0.5rem; border-radius: 12px; }
+      .nombre-sistema { font-size: 1rem; padding-left: 5px; border-left-width: 3px; }
+      .tab-btn { padding: 0.3rem 0.4rem; font-size: 0.75rem; }
+      .btn-accion { padding: 0.38rem 0.5rem; font-size: 0.72rem; }
+      .selector-dia { font-size: 0.8rem; padding: 0.35rem 0.5rem; }
+      .fecha-hora { font-size: 0.7rem; padding: 0.3rem 0.5rem; }
+      table { min-width: 360px; }
+    }
+  </style>
+</head>
+<body>
+<div class="sistema-ventas" id="contenedorPrincipal">
+  
+  <div class="nombre-sistema">⚡ VENTAS Silenay · Control Diario y Mensual</div>
+  
+  <!-- PESTAÑAS -->
+  <div class="tabs-container">
+    <button class="tab-btn active" data-tab="diario">📆 Trabajo Diario</button>
+    <button class="tab-btn" data-tab="mensual">📊 Resumen Mensual</button>
+  </div>
+
+  <!-- PESTAÑA: TRABAJO DIARIO -->
+  <div id="tabDiario" class="tab-content active">
+    <div class="flex-header">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <label style="color: white; font-weight: 600;">📅 Día:</label>
+        <input type="date" id="selectorDia" class="selector-dia">
+      </div>
+      <span class="fecha-hora" id="fechaHoraActual"></span>
+    </div>
+    
+    <div class="resumen-box">
+      <div class="resumen-item"><span class="etiqueta">💰 TOTAL</span><span class="valor" id="sumaTotalDiario">0.00</span></div>
+      <div class="resumen-item"><span class="etiqueta">📉 INVERSIÓN</span><span class="valor" id="sumaInversionDiario">0.00</span></div>
+      <div class="resumen-item ganancia"><span class="etiqueta">📈 GANANCIA</span><span class="valor" id="gananciaDiario">0.00</span></div>
+    </div>
+
+    <div class="subtitulo-tabla">
+      <span>📋 Registro del día: <span id="diaActualLabel"></span></span>
+    </div>
+
+    <div class="tabla-wrapper">
+      <table id="tablaDiario">
+        <thead>
+          <tr><th>PRODUCTO</th><th>TOTAL</th><th>INVERSIÓN</th><th>CÓDIGOS</th></tr>
+        </thead>
+        <tbody id="cuerpoTablaDiario"></tbody>
+      </table>
+    </div>
+
+    <div class="barra-herramientas">
+      <button class="btn-accion btn-agregar" id="btnAgregarFilaDiario">➕ <span class="btn-label-short">Fila</span><span class="btn-label-long">Agregar Fila</span></button>
+      <button class="btn-accion btn-eliminar" id="btnEliminarTodo">🗑️ <span class="btn-label-short">Eliminar</span><span class="btn-label-long">Eliminar Todo</span></button>
+      <button class="btn-accion" id="btnExportarPDFDiario">📄 <span class="btn-label-short">PDF</span><span class="btn-label-long">Exportar PDF</span></button>
+      <button class="btn-accion" id="btnEnviarWhatsAppDiario">📱 <span class="btn-label-short">WhatsApp</span><span class="btn-label-long">Enviar WhatsApp</span></button>
+    </div>
+  </div>
+
+  <!-- PESTAÑA: RESUMEN MENSUAL -->
+  <div id="tabMensual" class="tab-content">
+    <div class="flex-header">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <label style="color: white; font-weight: 600;">📊 Mes:</label>
+        <input type="month" id="selectorMes" class="selector-dia">
+      </div>
+    </div>
+
+    <div class="resumen-box">
+      <div class="resumen-item"><span class="etiqueta">💰 TOTAL MES</span><span class="valor" id="sumaTotalMensual">0.00</span></div>
+      <div class="resumen-item"><span class="etiqueta">📉 INVERSIÓN MES</span><span class="valor" id="sumaInversionMensual">0.00</span></div>
+      <div class="resumen-item ganancia"><span class="etiqueta">📈 GANANCIA MES</span><span class="valor" id="gananciaMensual">0.00</span></div>
+    </div>
+
+    <div class="subtitulo-tabla">
+      <span>📋 Estadística diaria del mes</span>
+    </div>
+
+    <div class="tabla-wrapper">
+      <table id="tablaResumenMensual" class="tabla-resumen-mensual">
+        <thead>
+          <tr><th>DÍA</th><th>TOTAL</th><th>INVERSIÓN</th><th>GANANCIA</th><th># PRODUCTOS</th></tr>
+        </thead>
+        <tbody id="cuerpoTablaMensual"></tbody>
+      </table>
+    </div>
+
+    <div class="barra-herramientas">
+      <button class="btn-accion" id="btnExportarPDFMensual">📄 <span class="btn-label-short">PDF</span><span class="btn-label-long">Exportar PDF</span></button>
+      <button class="btn-accion" id="btnEnviarWhatsAppMensual">📱 <span class="btn-label-short">WhatsApp</span><span class="btn-label-long">Enviar WhatsApp</span></button>
+    </div>
+  </div>
+
+  <div class="footer-ucinf">
+    🎓 Universidad de las Ciencias Informáticas. Ing:Damian Roca Mestril</strong>
+  </div>
+</div>
+
+<!-- Modal de confirmación para eliminar -->
+<div class="modal-overlay" id="modalEliminar">
+  <div class="modal-box">
+    <div class="modal-icon">⚠️</div>
+    <div class="modal-title">¿Eliminar todo?</div>
+    <div class="modal-message">Se borrarán <strong>todos los registros</strong> de ventas guardados. Esta acción no se puede deshacer.</div>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-cancel" id="btnModalCancelar">Cancelar</button>
+      <button class="modal-btn modal-btn-confirm" id="btnModalConfirmar">Sí, eliminar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    "use strict";
+
+    // --- ELEMENTOS DOM ---
+    const cuerpoDiario = document.getElementById('cuerpoTablaDiario');
+    const cuerpoMensual = document.getElementById('cuerpoTablaMensual');
+    
+    const sumaTotalDiario = document.getElementById('sumaTotalDiario');
+    const sumaInversionDiario = document.getElementById('sumaInversionDiario');
+    const gananciaDiario = document.getElementById('gananciaDiario');
+    
+    const sumaTotalMensual = document.getElementById('sumaTotalMensual');
+    const sumaInversionMensual = document.getElementById('sumaInversionMensual');
+    const gananciaMensual = document.getElementById('gananciaMensual');
+    
+    const fechaHoraSpan = document.getElementById('fechaHoraActual');
+    const selectorDia = document.getElementById('selectorDia');
+    const selectorMes = document.getElementById('selectorMes');
+    const diaActualLabel = document.getElementById('diaActualLabel');
+
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+
+    const STORAGE_PREFIX = 'ventas_silenay_diario_';
+
+    function actualizarFechaHora() {
+      const ahora = new Date();
+      const opciones = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+      fechaHoraSpan.textContent = ahora.toLocaleString('es-ES', opciones).replace(',', '');
+    }
+    actualizarFechaHora();
+    setInterval(actualizarFechaHora, 1000);
+
+    function formatoMoneda(valor) { return valor.toFixed(2); }
+
+    function obtenerFechaHoy() {
+      const hoy = new Date();
+      return `${hoy.getFullYear()}-${(hoy.getMonth()+1).toString().padStart(2,'0')}-${hoy.getDate().toString().padStart(2,'0')}`;
+    }
+
+    function obtenerMesActual() {
+      const hoy = new Date();
+      return `${hoy.getFullYear()}-${(hoy.getMonth()+1).toString().padStart(2,'0')}`;
+    }
+
+    function guardarDiaEnStorage(fecha, filas) {
+      localStorage.setItem(STORAGE_PREFIX + fecha, JSON.stringify(filas));
+    }
+
+    function cargarDiaDesdeStorage(fecha) {
+      const datos = localStorage.getItem(STORAGE_PREFIX + fecha);
+      if (!datos) return null;
+      try { return JSON.parse(datos); } catch(e) { return null; }
+    }
+
+    function obtenerTodosLosDiasDelMes(anioMes) {
+      const dias = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith(STORAGE_PREFIX)) {
+          const fecha = key.replace(STORAGE_PREFIX, '');
+          if (fecha.startsWith(anioMes)) {
+            dias.push(fecha);
+          }
+        }
+      }
+      return dias.sort();
+    }
+
+    function crearFila(productoNombre = '') {
+      const fila = document.createElement('tr');
+      
+      const tdProd = document.createElement('td');
+      const inputProd = document.createElement('input');
+      inputProd.type = 'text'; inputProd.className = 'input-producto';
+      inputProd.value = productoNombre; inputProd.placeholder = 'Nombre del producto';
+      tdProd.appendChild(inputProd); fila.appendChild(tdProd);
+      
+      const tdTotal = document.createElement('td');
+      const inputTotal = document.createElement('input');
+      inputTotal.type = 'number'; inputTotal.step = '0.01'; inputTotal.min = '0';
+      inputTotal.className = 'input-tabla total-input';
+      inputTotal.value = ''; inputTotal.placeholder = '0.00';
+      tdTotal.appendChild(inputTotal); fila.appendChild(tdTotal);
+      
+      const tdInv = document.createElement('td');
+      const inputInv = document.createElement('input');
+      inputInv.type = 'number'; inputInv.step = '0.01'; inputInv.min = '0';
+      inputInv.className = 'input-tabla inversion-input';
+      inputInv.value = ''; inputInv.placeholder = '0.00';
+      tdInv.appendChild(inputInv); fila.appendChild(tdInv);
+      
+      const tdCod = document.createElement('td');
+      const inputCod = document.createElement('input');
+      inputCod.type = 'text'; inputCod.className = 'input-codigo';
+      inputCod.placeholder = 'Cód. opcional'; inputCod.value = '';
+      tdCod.appendChild(inputCod); fila.appendChild(tdCod);
+      
+      return fila;
+    }
+
+    function cargarFilasEnTablaDiario(datosFilas) {
+      cuerpoDiario.innerHTML = '';
+      if (!datosFilas || datosFilas.length === 0) {
+        for (let i = 0; i < 10; i++) {
+          cuerpoDiario.appendChild(crearFila(''));
+        }
+      } else {
+        datosFilas.forEach(item => {
+          const fila = crearFila(item.producto || '');
+          const inputs = fila.querySelectorAll('input');
+          if (inputs.length >= 4) {
+            inputs[1].value = item.total || '';
+            inputs[2].value = item.inversion || '';
+            inputs[3].value = item.codigo || '';
+          }
+          cuerpoDiario.appendChild(fila);
+        });
+      }
+      calcularTotalesDiario();
+    }
+
+    function calcularTotalesDiario() {
+      const inputsTotal = document.querySelectorAll('#cuerpoTablaDiario .total-input');
+      const inputsInversion = document.querySelectorAll('#cuerpoTablaDiario .inversion-input');
+      let sumaTotal = 0, sumaInversion = 0;
+      
+      inputsTotal.forEach(i => { sumaTotal += parseFloat(i.value) || 0; });
+      inputsInversion.forEach(i => { sumaInversion += parseFloat(i.value) || 0; });
+      
+      const ganancia = sumaTotal - sumaInversion;
+      sumaTotalDiario.textContent = formatoMoneda(sumaTotal);
+      sumaInversionDiario.textContent = formatoMoneda(sumaInversion);
+      gananciaDiario.textContent = formatoMoneda(ganancia);
+      
+      const fecha = selectorDia.value;
+      if (fecha) {
+        const filas = [];
+        document.querySelectorAll('#cuerpoTablaDiario tr').forEach(fila => {
+          const inputs = fila.querySelectorAll('input');
+          if (inputs.length >= 4) {
+            filas.push({
+              producto: inputs[0].value,
+              total: inputs[1].value,
+              inversion: inputs[2].value,
+              codigo: inputs[3].value
+            });
+          }
+        });
+        guardarDiaEnStorage(fecha, filas);
+      }
+    }
+
+    function cambiarDia(fecha) {
+      const datos = cargarDiaDesdeStorage(fecha);
+      cargarFilasEnTablaDiario(datos || []);
+      const fechaObj = new Date(fecha + 'T12:00:00');
+      diaActualLabel.textContent = fechaObj.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
+    function actualizarResumenMensual() {
+      const anioMes = selectorMes.value;
+      if (!anioMes) return;
+      
+      const dias = obtenerTodosLosDiasDelMes(anioMes);
+      let totalMes = 0, inversionMes = 0;
+      
+      cuerpoMensual.innerHTML = '';
+      
+      dias.forEach(fecha => {
+        const datosDia = cargarDiaDesdeStorage(fecha);
+        if (!datosDia) return;
+        
+        let totalDia = 0, inversionDia = 0, numProductos = datosDia.length;
+        
+        datosDia.forEach(item => {
+          totalDia += parseFloat(item.total) || 0;
+          inversionDia += parseFloat(item.inversion) || 0;
+        });
+        
+        totalMes += totalDia;
+        inversionMes += inversionDia;
+        
+        const gananciaDia = totalDia - inversionDia;
+        
+        const fila = document.createElement('tr');
+        fila.innerHTML = `
+          <td style="text-align:left; padding-left:1rem;">${new Date(fecha + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', weekday: 'short' })}</td>
+          <td>${formatoMoneda(totalDia)}</td>
+          <td>${formatoMoneda(inversionDia)}</td>
+          <td>${formatoMoneda(gananciaDia)}</td>
+          <td>${numProductos}</td>
+        `;
+        cuerpoMensual.appendChild(fila);
+      });
+      
+      const gananciaMes = totalMes - inversionMes;
+      sumaTotalMensual.textContent = formatoMoneda(totalMes);
+      sumaInversionMensual.textContent = formatoMoneda(inversionMes);
+      gananciaMensual.textContent = formatoMoneda(gananciaMes);
+      
+      if (dias.length === 0) {
+        cuerpoMensual.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:2rem;">No hay datos registrados para este mes</td></tr>';
+      }
+    }
+
+    function inicializar() {
+      const hoy = obtenerFechaHoy();
+      selectorDia.value = hoy;
+      selectorMes.value = obtenerMesActual();
+      
+      cambiarDia(hoy);
+      actualizarResumenMensual();
+      
+      selectorDia.addEventListener('change', (e) => cambiarDia(e.target.value));
+      selectorMes.addEventListener('change', actualizarResumenMensual);
+      
+      cuerpoDiario.addEventListener('input', calcularTotalesDiario);
+      cuerpoDiario.addEventListener('blur', (e) => {
+        if (e.target.classList.contains('total-input') || e.target.classList.contains('inversion-input')) {
+          let val = e.target.value.trim();
+          if (val !== '') {
+            e.target.value = (parseFloat(val) || 0).toFixed(2);
+          }
+          calcularTotalesDiario();
+        }
+      }, true);
+      
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          const target = tab.dataset.tab;
+          tabs.forEach(t => t.classList.remove('active'));
+          contents.forEach(c => c.classList.remove('active'));
+          tab.classList.add('active');
+          document.getElementById(`tab${target.charAt(0).toUpperCase() + target.slice(1)}`).classList.add('active');
+          
+          if (target === 'mensual') {
+            actualizarResumenMensual();
+          }
+        });
+      });
+    }
+
+    document.getElementById('btnAgregarFilaDiario').addEventListener('click', () => {
+      cuerpoDiario.appendChild(crearFila(''));
+      calcularTotalesDiario();
+    });
+
+    // --- ELIMINAR TODOS LOS REGISTROS ---
+    const modalEliminar = document.getElementById('modalEliminar');
+    const btnEliminarTodo = document.getElementById('btnEliminarTodo');
+    const btnModalCancelar = document.getElementById('btnModalCancelar');
+    const btnModalConfirmar = document.getElementById('btnModalConfirmar');
+
+    function abrirModalEliminar() {
+      modalEliminar.classList.add('visible');
+    }
+
+    function cerrarModalEliminar() {
+      modalEliminar.classList.remove('visible');
+    }
+
+    function eliminarTodosLosRegistros() {
+      const keysAEliminar = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith(STORAGE_PREFIX)) {
+          keysAEliminar.push(key);
+        }
+      }
+      keysAEliminar.forEach(key => localStorage.removeItem(key));
+
+      cerrarModalEliminar();
+      cambiarDia(selectorDia.value);
+      actualizarResumenMensual();
+    }
+
+    btnEliminarTodo.addEventListener('click', abrirModalEliminar);
+    btnModalCancelar.addEventListener('click', cerrarModalEliminar);
+    btnModalConfirmar.addEventListener('click', eliminarTodosLosRegistros);
+
+    modalEliminar.addEventListener('click', (e) => {
+      if (e.target === modalEliminar) cerrarModalEliminar();
+    });
+
+    // Exportar PDF Diario (mejorado)
+    document.getElementById('btnExportarPDFDiario').addEventListener('click', () => {
+      const elemento = document.getElementById('contenedorPrincipal');
+      elemento.classList.add('pdf-export');
+      
+      const opt = {
+        margin:        [0.3, 0.3, 0.3, 0.3],
+        filename:      `ventas_roca_${selectorDia.value}.pdf`,
+        image:         { type: 'jpeg', quality: 1.0 },
+        html2canvas:   { scale: 2, letterRendering: true, useCORS: true, logging: false, backgroundColor: '#ffffff' },
+        jsPDF:         { unit: 'in', format: 'a4', orientation: 'landscape' }
+      };
+      
+      html2pdf().set(opt).from(elemento).save().then(() => {
+        elemento.classList.remove('pdf-export');
+      });
+    });
+
+    document.getElementById('btnEnviarWhatsAppDiario').addEventListener('click', () => {
+      const filas = document.querySelectorAll('#cuerpoTablaDiario tr');
+      let mensaje = `*VENTAS ROCA - ${selectorDia.value}*\n`;
+      mensaje += `💰 Total: $${sumaTotalDiario.textContent}\n📉 Inversión: $${sumaInversionDiario.textContent}\n📈 Ganancia: $${gananciaDiario.textContent}\n\n*Detalle:*\n`;
+      filas.forEach((fila, idx) => {
+        if (idx >= 15) return;
+        const inputs = fila.querySelectorAll('input');
+        if (inputs.length >= 3) {
+          const prod = inputs[0].value.trim() || '(sin nombre)';
+          mensaje += `${idx+1}. ${prod} | T:${inputs[1].value || '0'} | I:${inputs[2].value || '0'}\n`;
+        }
+      });
+      mensaje += `\n_Ing. Damian Roca Mestril_`;
+      window.open(`https://wa.me/5354203088?text=${encodeURIComponent(mensaje)}`, '_blank');
+    });
+
+    document.getElementById('btnExportarPDFMensual').addEventListener('click', () => {
+      const elemento = document.getElementById('contenedorPrincipal');
+      elemento.classList.add('pdf-export');
+      
+      const opt = {
+        margin:        [0.3, 0.3, 0.3, 0.3],
+        filename:      `ventas_roca_resumen_${selectorMes.value}.pdf`,
+        image:         { type: 'jpeg', quality: 1.0 },
+        html2canvas:   { scale: 2, letterRendering: true, useCORS: true, logging: false, backgroundColor: '#ffffff' },
+        jsPDF:         { unit: 'in', format: 'a4', orientation: 'landscape' }
+      };
+      
+      html2pdf().set(opt).from(elemento).save().then(() => {
+        elemento.classList.remove('pdf-export');
+      });
+    });
+
+    document.getElementById('btnEnviarWhatsAppMensual').addEventListener('click', () => {
+      let mensaje = `*VENTAS ROCA - Resumen ${selectorMes.value}*\n`;
+      mensaje += `💰 Total Mes: $${sumaTotalMensual.textContent}\n📉 Inversión Mes: $${sumaInversionMensual.textContent}\n📈 Ganancia Mes: $${gananciaMensual.textContent}\n\n`;
+      mensaje += `_Ing. Damian Roca Mestril_`;
+      window.open(`https://wa.me/5354203088?text=${encodeURIComponent(mensaje)}`, '_blank');
+    });
+
+    inicializar();
+  })();
+</script>
+</body>
+</html>
