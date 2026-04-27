@@ -1401,7 +1401,7 @@
         filename:      'ventas_roca_' + selectorDia.value + '.pdf',
         image:         { type: 'jpeg', quality: 1.0 },
         html2canvas:   { scale: 2, letterRendering: true, useCORS: true, logging: false, backgroundColor: '#ffffff' },
-        jsPDF:         { unit: 'in', format: 'a4', orientation: 'landscape' }
+        jsPDF:         { unit: 'in', format: 'a4', orientation: 'portrait' }
       };
       
       html2pdf().set(opt).from(elemento).save().then(function() {
@@ -1435,7 +1435,7 @@
         filename:      'ventas_roca_resumen_' + selectorMes.value + '.pdf',
         image:         { type: 'jpeg', quality: 1.0 },
         html2canvas:   { scale: 2, letterRendering: true, useCORS: true, logging: false, backgroundColor: '#ffffff' },
-        jsPDF:         { unit: 'in', format: 'a4', orientation: 'landscape' }
+        jsPDF:         { unit: 'in', format: 'a4', orientation: 'portrait' }
       };
       
       html2pdf().set(opt).from(elemento).save().then(function() {
