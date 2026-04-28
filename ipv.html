@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+    <title>Control de Ventas Diarias - IPV</title>
+    <!-- html2pdf para exportar a PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
+            integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a237e, #42a5f5, #90caf9);
+            min-height: 100vh;
+            padding: clamp(8px, 2vw, 20px);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1565c0, #1976d2);
+            color: white;
+            padding: clamp(12px, 3vw, 25px);
+            text-align: center;
+            font-size: clamp(1.2rem, 5vw, 2.5em);
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Reloj en tiempo real */
+        .reloj-container {
+            background: linear-gradient(135deg, #0d47a1, #1565c0);
+            color: #e3f2fd;
+            padding: clamp(6px, 1.5vw, 12px) clamp(10px, 2vw, 20px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: clamp(0.85rem, 2.5vw, 1.1rem);
+            font-weight: 600;
+            border-bottom: 2px solid #0d47a1;
+            flex-wrap: wrap;
+        }
+
+        .reloj-container span {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+
+        .tabs {
+            display: flex;
+            background: linear-gradient(135deg, #1976d2, #1e88e5);
+            border-bottom: 3px solid #1565c0;
+            flex-wrap: wrap;
+        }
+
+        .tab-button {
+            flex: 1 1 auto;
+            padding: clamp(8px, 2vw, 15px) clamp(6px, 1.5vw, 12px);
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: clamp(0.85rem, 2.5vw, 1.2em);
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            min-width: 0;
+            white-space: nowrap;
+        }
+
+        .tab-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .tab-button.active {
+            background: rgba(255, 255, 255, 0.2);
+            border-bottom: 3px solid #ffeb3b;
+        }
+
+        .tab-content {
+            display: none;
+            padding: clamp(10px, 3vw, 30px);
+            animation: fadeIn 0.5s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Tabla responsive */
+        .tabla-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            min-width: 600px;
+        }
+
+        th {
+            background: linear-gradient(135deg, #1565c0, #1976d2);
+            color: white;
+            padding: clamp(8px, 1.5vw, 15px) clamp(4px, 1vw, 10px);
+            text-align: center;
+            font-weight: bold;
+            font-size: clamp(0.75rem, 2vw, 1rem);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: clamp(6px, 1.2vw, 12px) clamp(4px, 0.8vw, 8px);
+            text-align: center;
+            border: 1px solid #e0e0e0;
+            background: white;
+            font-size: clamp(0.8rem, 2vw, 0.95em);
+        }
+
+        tr:hover td {
+            background: #f5f5f5;
+        }
+
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: clamp(4px, 1vw, 8px);
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: clamp(0.8rem, 2vw, 0.95em);
+            transition: border-color 0.3s ease;
+            min-width: 50px;
+        }
+
+        input[type="text"]:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: #1976d2;
+            box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+        }
+
+        .readonly {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #1565c0;
+        }
+
+        .form-container {
+            background: linear-gradient(135deg, #f5f5f5, #e3f2fd);
+            padding: clamp(12px, 3vw, 25px);
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #1565c0;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: clamp(6px, 1.5vw, 10px) clamp(10px, 2.5vw, 20px);
+            background: linear-gradient(135deg, #1976d2, #1e88e5);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: clamp(0.8rem, 2vw, 1em);
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            white-space: nowrap;
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, #1565c0, #1976d2);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        button.delete {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+        }
+
+        button.delete:hover {
+            background: linear-gradient(135deg, #d32f2f, #c62828);
+        }
+
+        button.edit {
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+        }
+
+        button.edit:hover {
+            background: linear-gradient(135deg, #f57c00, #ef6c00);
+        }
+
+        button.limpiar {
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+        }
+
+        button.limpiar:hover {
+            background: linear-gradient(135deg, #f57c00, #ef6c00);
+        }
+
+        button.pdf {
+            background: linear-gradient(135deg, #4caf50, #388e3c);
+        }
+
+        button.pdf:hover {
+            background: linear-gradient(135deg, #388e3c, #2e7d32);
+        }
+
+        .calculator-container {
+            background: linear-gradient(135deg, #f5f5f5, #e3f2fd);
+            padding: clamp(12px, 3vw, 25px);
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .bill-inputs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: clamp(8px, 2vw, 15px);
+            margin-top: 20px;
+        }
+
+        .bill-group {
+            background: white;
+            padding: clamp(8px, 2vw, 15px);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .bill-group label {
+            display: block;
+            font-weight: bold;
+            color: #1565c0;
+            margin-bottom: 8px;
+            font-size: clamp(0.85rem, 2vw, 1rem);
+        }
+
+        .total-section {
+            margin-top: 30px;
+            padding: clamp(10px, 2.5vw, 20px);
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            font-size: clamp(0.9rem, 2.5vw, 1.1em);
+            border-bottom: 1px solid #e0e0e0;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .total-row:last-child {
+            border-bottom: none;
+            font-weight: bold;
+            font-size: clamp(1rem, 3vw, 1.3em);
+            color: #1565c0;
+        }
+
+        footer {
+            background: linear-gradient(135deg, #1565c0, #1976d2);
+            color: white;
+            text-align: center;
+            padding: clamp(8px, 2vw, 15px);
+            font-size: clamp(0.75rem, 2vw, 0.9em);
+        }
+
+        .importe-total {
+            background: #e3f2fd;
+            font-weight: bold;
+            font-size: clamp(0.9rem, 2.5vw, 1.1em);
+        }
+
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 0.95em;
+            background: white;
+        }
+
+        .alert {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .alert-success {
+            background: #c8e6c9;
+            color: #2e7d32;
+            border: 1px solid #4caf50;
+        }
+
+        .alert-error {
+            background: #ffcdd2;
+            color: #c62828;
+            border: 1px solid #f44336;
+        }
+
+        /* Barra de herramientas IPV */
+        .ipv-toolbar {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        /* Subtitulo */
+        .section-title {
+            color: #1565c0;
+            margin-bottom: 20px;
+            font-size: clamp(1.1rem, 3.5vw, 1.5rem);
+        }
+
+        /* Tabla acciones botones responsive */
+        .acciones-cell {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .acciones-cell button {
+            font-size: clamp(0.7rem, 1.8vw, 0.85rem);
+            padding: clamp(4px, 1vw, 8px) clamp(6px, 1.5vw, 12px);
+        }
+
+        /* Modal de confirmacion */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.65);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        .modal-overlay.visible {
+            display: flex;
+        }
+
+        .modal-box {
+            background: white;
+            border: 2px solid #ff9800;
+            border-radius: 15px;
+            padding: clamp(1rem, 3vw, 2rem);
+            max-width: 420px;
+            width: 100%;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+            text-align: center;
+            animation: modalIn 0.25s ease;
+        }
+
+        @keyframes modalIn {
+            from { transform: scale(0.85); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-icon {
+            font-size: 3rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .modal-title {
+            color: #f57c00;
+            font-size: 1.3rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+
+        .modal-message {
+            color: #555;
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .modal-btn {
+            padding: 0.6rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.15s ease;
+        }
+
+        .modal-btn-cancel {
+            background: #e0e0e0;
+            color: #333;
+            border: 1px solid #bdbdbd;
+        }
+
+        .modal-btn-cancel:hover {
+            background: #bdbdbd;
+        }
+
+        .modal-btn-confirm {
+            background: #ff9800;
+            color: white;
+            border: 1px solid #f57c00;
+        }
+
+        .modal-btn-confirm:hover {
+            background: #f57c00;
+        }
+
+        /* ===== ESTILOS PDF ===== */
+        .pdf-export .tabs,
+        .pdf-export .ipv-toolbar,
+        .pdf-export .reloj-container,
+        .pdf-export .modal-overlay {
+            display: none !important;
+        }
+
+        .pdf-export header {
+            font-size: 1.5rem !important;
+            padding: 12px !important;
+        }
+
+        .pdf-export .tab-content {
+            display: block !important;
+            padding: 10px !important;
+        }
+
+        .pdf-export .tab-content:not(.pdf-target) {
+            display: none !important;
+        }
+
+        .pdf-export table {
+            min-width: 100% !important;
+        }
+
+        .pdf-export th {
+            font-size: 11px !important;
+            padding: 6px 4px !important;
+        }
+
+        .pdf-export td {
+            font-size: 10px !important;
+            padding: 4px !important;
+        }
+
+        .pdf-export input[type="number"],
+        .pdf-export input[type="text"] {
+            border: none !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            font-size: 10px !important;
+            padding: 0 !important;
+            text-align: center !important;
+            pointer-events: none !important;
+        }
+
+        .pdf-export .readonly {
+            background: #f0f0f0 !important;
+        }
+
+        .pdf-export .pdf-fecha-header {
+            display: block !important;
+            text-align: center;
+            color: #333;
+            font-size: 0.9rem;
+            padding: 8px 0;
+        }
+
+        .pdf-fecha-header {
+            display: none;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab-button {
+                text-align: center;
+                border-bottom: 1px solid rgba(255,255,255,0.1);
+            }
+
+            .tab-button.active {
+                border-bottom: 3px solid #ffeb3b;
+            }
+
+            table {
+                min-width: 500px;
+            }
+
+            .bill-inputs {
+                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            }
+
+            .total-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .total-row input {
+                width: 100% !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            table {
+                min-width: 420px;
+            }
+
+            .bill-inputs {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .ipv-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .ipv-toolbar button {
+                width: 100%;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .button-group button {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 360px) {
+            table {
+                min-width: 380px;
+            }
+
+            header {
+                font-size: 1rem;
+                padding: 8px;
+            }
+
+            .reloj-container {
+                font-size: 0.78rem;
+            }
+        }
+
+        @media (min-width: 1200px) {
+            .bill-inputs {
+                grid-template-columns: repeat(7, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="contenedorPrincipal">
+        <header>
+            Control de Ventas Diarias
+        </header>
+
+        <!-- Reloj en tiempo real -->
+        <div class="reloj-container">
+            <span id="relojFecha"></span>
+            <span id="relojHora"></span>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-button active" onclick="openTab('ipv', this)">IPV</button>
+            <button class="tab-button" onclick="openTab('productos', this)">Productos</button>
+            <button class="tab-button" onclick="openTab('efectivo', this)">Efectivo</button>
+        </div>
+
+        <!-- Pestana IPV -->
+        <div id="ipv" class="tab-content active">
+            <h2 class="section-title">Inventario Perpetuo de Ventas</h2>
+            <div class="pdf-fecha-header" id="pdfFechaIPV"></div>
+            <div class="tabla-wrapper">
+                <table id="tablaIPV">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>U/M Inicio</th>
+                            <th>Entradas</th>
+                            <th>U/M Actual</th>
+                            <th>U/M Final</th>
+                            <th>Ventas</th>
+                            <th>Importe</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpoTablaIPV">
+                    </tbody>
+                    <tfoot>
+                        <tr class="importe-total">
+                            <td colspan="6" style="text-align: right; font-weight: bold;">Total Importe:</td>
+                            <td id="totalImporte" style="font-weight: bold;">$0.00</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            <div id="mensajeIPV" style="text-align: center; padding: 40px; color: #999;">
+                No hay productos registrados. Agregue productos en la pestana "Productos"
+            </div>
+
+            <!-- Barra de herramientas IPV -->
+            <div class="ipv-toolbar">
+                <button class="pdf" onclick="exportarIPVaPDF()">Descargar PDF</button>
+                <button class="limpiar" onclick="mostrarModalLimpiar()">Limpiar Datos IPV</button>
+            </div>
+        </div>
+
+        <!-- Pestana Productos -->
+        <div id="productos" class="tab-content">
+            <h2 class="section-title">Gestion de Productos</h2>
+            
+            <div class="form-container">
+                <h3 id="formTitle" style="color: #1976d2;">Agregar Nuevo Producto</h3>
+                <div class="form-group">
+                    <label for="nombreProducto">Nombre del Producto:</label>
+                    <input type="text" id="nombreProducto" placeholder="Ej: Pan, Leche, Huevos..." required>
+                </div>
+                <div class="form-group">
+                    <label for="precioProducto">Precio Unitario ($):</label>
+                    <input type="number" id="precioProducto" min="0" step="0.01" placeholder="0.00" required>
+                </div>
+                <input type="hidden" id="editIndex" value="-1">
+                <div class="button-group">
+                    <button onclick="guardarProducto()">Guardar Producto</button>
+                    <button class="delete" onclick="cancelarEdicion()">Cancelar</button>
+                </div>
+            </div>
+
+            <h3 style="color: #1565c0; margin: 30px 0 15px;">Lista de Productos</h3>
+            <div class="tabla-wrapper">
+                <table id="tablaProductos">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Nombre del Producto</th>
+                            <th>Precio ($)</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpoTablaProductos">
+                    </tbody>
+                </table>
+            </div>
+            <div id="mensajeProductos" style="text-align: center; padding: 40px; color: #999;">
+                No hay productos registrados
+            </div>
+        </div>
+
+        <!-- Pestana Efectivo -->
+        <div id="efectivo" class="tab-content">
+            <h2 class="section-title">Calculadora de Efectivo</h2>
+            
+            <div class="calculator-container">
+                <h3 style="color: #1976d2;">Conteo de Billetes</h3>
+                <div class="bill-inputs">
+                    <div class="bill-group">
+                        <label>$1000</label>
+                        <input type="number" id="billete1000" min="0" value="0" onchange="calcularEfectivo()">
+                    </div>
+                    <div class="bill-group">
+                        <label>$500</label>
+                        <input type="number" id="billete500" min="0" value="0" onchange="calcularEfectivo()">
+                    </div>
+                    <div class="bill-group">
+                        <label>$200</label>
+                        <input type="number" id="billete200" min="0" value="0" onchange="calcularEfectivo()">
+                    </div>
+                    <div class="bill-group">
+                        <label>$100</label>
+                        <input type="number" id="billete100" min="0" value="0" onchange="calcularEfectivo()">
+                    </div>
+                    <div class="bill-group">
+                        <label>$50</label>
+                        <input type="number" id="billete50" min="0" value="0" onchange="calcularEfectivo()">
+                    </div>
+                    <div class="bill-group">
+                        <label>$20</label>
+                        <input type="number" id="billete20" min="0" value="0" onchange="calcularEfectivo()">
+                    </div>
+                    <div class="bill-group">
+                        <label>$10</label>
+                        <input type="number" id="billete10" min="0" value="0" onchange="calcularEfectivo()">
+                    </div>
+                </div>
+
+                <div class="total-section">
+                    <div class="total-row">
+                        <span>Total en Efectivo:</span>
+                        <span id="totalEfectivo">$0.00</span>
+                    </div>
+                    <div class="total-row">
+                        <span>Monto en Transferencia:</span>
+                        <input type="number" id="montoTransferencia" min="0" step="0.01" value="0" onchange="calcularTotalRecaudado()" style="width: 150px; text-align: right;">
+                    </div>
+                    <div class="total-row">
+                        <span>Total Recaudado:</span>
+                        <span id="totalRecaudado" style="font-size: 1.5em; color: #2e7d32;">$0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            Universidad de las Ciencias Informaticas. ING: Damian Roca Mestril
+        </footer>
+    </div>
+
+    <!-- Modal para limpiar datos IPV -->
+    <div class="modal-overlay" id="modalLimpiar">
+        <div class="modal-box">
+            <div class="modal-icon">&#9888;&#65039;</div>
+            <div class="modal-title">Limpiar Datos IPV</div>
+            <div class="modal-message">Se borraran todos los valores de <strong>U/M Inicio, Entradas y U/M Final</strong> del IPV. Los productos <strong>NO</strong> se eliminaran.</div>
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn-cancel" onclick="cerrarModalLimpiar()">Cancelar</button>
+                <button class="modal-btn modal-btn-confirm" onclick="confirmarLimpiarDatos()">Si, limpiar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let productos = JSON.parse(localStorage.getItem('productos')) || [];
+        let datosIPV = {};
+
+        // === RELOJ EN TIEMPO REAL ===
+        function actualizarReloj() {
+            const ahora = new Date();
+            const opcionesFecha = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const opcionesHora = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+            
+            document.getElementById('relojFecha').textContent = ahora.toLocaleDateString('es-ES', opcionesFecha);
+            document.getElementById('relojHora').textContent = ahora.toLocaleTimeString('es-ES', opcionesHora);
+        }
+        actualizarReloj();
+        setInterval(actualizarReloj, 1000);
+
+        // Utilidad para escapar HTML y prevenir XSS
+        function escapeHTML(str) {
+            var div = document.createElement('div');
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
+        }
+
+        // Inicializar datos IPV cuando se cargan productos
+        function inicializarDatosIPV() {
+            productos.forEach(function(producto) {
+                if (!datosIPV[producto.nombre]) {
+                    datosIPV[producto.nombre] = {
+                        umInicio: '',
+                        entradas: '',
+                        umFinal: ''
+                    };
+                }
+            });
+        }
+
+        // Funcion para cambiar de pestana
+        function openTab(tabName, btn) {
+            var tabs = document.querySelectorAll('.tab-content');
+            var buttons = document.querySelectorAll('.tab-button');
+            
+            tabs.forEach(function(tab) { tab.classList.remove('active'); });
+            buttons.forEach(function(button) { button.classList.remove('active'); });
+            
+            document.getElementById(tabName).classList.add('active');
+            btn.classList.add('active');
+            
+            actualizarTablaIPV();
+        }
+
+        // Funcion para guardar producto
+        function guardarProducto() {
+            var nombre = document.getElementById('nombreProducto').value.trim();
+            var precio = parseFloat(document.getElementById('precioProducto').value);
+            var editIndex = parseInt(document.getElementById('editIndex').value);
+            
+            if (!nombre) {
+                alert('Por favor ingrese el nombre del producto');
+                return;
+            }
+            
+            if (isNaN(precio) || precio <= 0) {
+                alert('Por favor ingrese un precio valido');
+                return;
+            }
+            
+            if (editIndex >= 0) {
+                var productoAntiguo = productos[editIndex];
+
+                if (productoAntiguo.nombre.toLowerCase() !== nombre.toLowerCase() &&
+                    productos.some(function(p, i) { return i !== editIndex && p.nombre.toLowerCase() === nombre.toLowerCase(); })) {
+                    alert('Ya existe un producto con ese nombre');
+                    return;
+                }
+
+                productos[editIndex] = { nombre: nombre, precio: precio };
+                
+                if (productoAntiguo.nombre !== nombre) {
+                    if (datosIPV[productoAntiguo.nombre]) {
+                        datosIPV[nombre] = datosIPV[productoAntiguo.nombre];
+                        delete datosIPV[productoAntiguo.nombre];
+                    }
+                }
+            } else {
+                if (productos.some(function(p) { return p.nombre.toLowerCase() === nombre.toLowerCase(); })) {
+                    alert('Ya existe un producto con ese nombre');
+                    return;
+                }
+                
+                productos.push({ nombre: nombre, precio: precio });
+                datosIPV[nombre] = {
+                    umInicio: '',
+                    entradas: '',
+                    umFinal: ''
+                };
+            }
+            
+            guardarDatos();
+            cancelarEdicion();
+            actualizarTablaProductos();
+            actualizarTablaIPV();
+        }
+
+        // Funcion para editar producto
+        function editarProducto(index) {
+            var producto = productos[index];
+            document.getElementById('nombreProducto').value = producto.nombre;
+            document.getElementById('precioProducto').value = producto.precio;
+            document.getElementById('editIndex').value = index;
+            document.getElementById('formTitle').textContent = 'Editar Producto';
+        }
+
+        // Funcion para eliminar producto
+        function eliminarProducto(index) {
+            if (confirm('Esta seguro de eliminar este producto?')) {
+                var producto = productos[index];
+                productos.splice(index, 1);
+                delete datosIPV[producto.nombre];
+                
+                guardarDatos();
+                actualizarTablaProductos();
+                actualizarTablaIPV();
+            }
+        }
+
+        // Funcion para cancelar edicion
+        function cancelarEdicion() {
+            document.getElementById('nombreProducto').value = '';
+            document.getElementById('precioProducto').value = '';
+            document.getElementById('editIndex').value = '-1';
+            document.getElementById('formTitle').textContent = 'Agregar Nuevo Producto';
+        }
+
+        // Funcion para actualizar tabla de productos
+        function actualizarTablaProductos() {
+            var tbody = document.getElementById('cuerpoTablaProductos');
+            var mensaje = document.getElementById('mensajeProductos');
+            
+            if (productos.length === 0) {
+                tbody.innerHTML = '';
+                mensaje.style.display = 'block';
+            } else {
+                mensaje.style.display = 'none';
+                tbody.innerHTML = productos.map(function(producto, index) {
+                    var nombreEscapado = escapeHTML(producto.nombre);
+                    return '<tr>' +
+                        '<td>' + (index + 1) + '</td>' +
+                        '<td>' + nombreEscapado + '</td>' +
+                        '<td>$' + producto.precio.toFixed(2) + '</td>' +
+                        '<td><div class="acciones-cell">' +
+                            '<button class="edit" onclick="editarProducto(' + index + ')">Editar</button>' +
+                            '<button class="delete" onclick="eliminarProducto(' + index + ')">Eliminar</button>' +
+                        '</div></td>' +
+                    '</tr>';
+                }).join('');
+            }
+        }
+
+        // Funcion para actualizar tabla IPV
+        function actualizarTablaIPV() {
+            var tbody = document.getElementById('cuerpoTablaIPV');
+            var mensaje = document.getElementById('mensajeIPV');
+            var tabla = document.getElementById('tablaIPV');
+            
+            if (productos.length === 0) {
+                tbody.innerHTML = '';
+                mensaje.style.display = 'block';
+                tabla.style.display = 'none';
+                return;
+            }
+            
+            mensaje.style.display = 'none';
+            tabla.style.display = 'table';
+            
+            var totalImporte = 0;
+            
+            tbody.innerHTML = productos.map(function(producto) {
+                var datos = datosIPV[producto.nombre] || {
+                    umInicio: '',
+                    entradas: '',
+                    umFinal: ''
+                };
+                
+                var umInicioVal = datos.umInicio === '' ? 0 : parseFloat(datos.umInicio) || 0;
+                var entradasVal = datos.entradas === '' ? 0 : parseFloat(datos.entradas) || 0;
+                var umFinalVal = datos.umFinal === '' ? 0 : parseFloat(datos.umFinal) || 0;
+                
+                var umActual = umInicioVal + entradasVal;
+                var ventas = umActual - umFinalVal;
+                var importe = ventas * producto.precio;
+                totalImporte += importe;
+                
+                var umInicioDisplay = datos.umInicio === '' ? '' : datos.umInicio;
+                var entradasDisplay = datos.entradas === '' ? '' : datos.entradas;
+                var umFinalDisplay = datos.umFinal === '' ? '' : datos.umFinal;
+                
+                var nombreEsc = escapeHTML(producto.nombre);
+                var nombreAttr = nombreEsc.replace(/'/g, '&#39;');
+                return '<tr>' +
+                    '<td style="font-weight: bold;">' + nombreEsc + '</td>' +
+                    '<td><input type="number" value="' + umInicioDisplay + '" placeholder="0" onchange="actualizarDatoIPV(\'' + nombreAttr + '\', \'umInicio\', this.value)" min="0"></td>' +
+                    '<td><input type="number" value="' + entradasDisplay + '" placeholder="0" onchange="actualizarDatoIPV(\'' + nombreAttr + '\', \'entradas\', this.value)" min="0"></td>' +
+                    '<td class="readonly">' + umActual + '</td>' +
+                    '<td><input type="number" value="' + umFinalDisplay + '" placeholder="0" onchange="actualizarDatoIPV(\'' + nombreAttr + '\', \'umFinal\', this.value)" min="0"></td>' +
+                    '<td class="readonly">' + ventas + '</td>' +
+                    '<td class="readonly">$' + importe.toFixed(2) + '</td>' +
+                '</tr>';
+            }).join('');
+            
+            document.getElementById('totalImporte').textContent = '$' + totalImporte.toFixed(2);
+        }
+
+        // Funcion para actualizar datos IPV
+        function actualizarDatoIPV(nombreProducto, campo, valor) {
+            if (!datosIPV[nombreProducto]) {
+                datosIPV[nombreProducto] = {
+                    umInicio: '',
+                    entradas: '',
+                    umFinal: ''
+                };
+            }
+            
+            datosIPV[nombreProducto][campo] = valor === '' ? '' : (parseFloat(valor) || 0);
+            guardarDatos();
+            actualizarTablaIPV();
+        }
+
+        // === LIMPIAR DATOS IPV (sin eliminar productos) ===
+        function mostrarModalLimpiar() {
+            document.getElementById('modalLimpiar').classList.add('visible');
+        }
+
+        function cerrarModalLimpiar() {
+            document.getElementById('modalLimpiar').classList.remove('visible');
+        }
+
+        function confirmarLimpiarDatos() {
+            // Resetear todos los datos IPV sin tocar los productos
+            productos.forEach(function(producto) {
+                datosIPV[producto.nombre] = {
+                    umInicio: '',
+                    entradas: '',
+                    umFinal: ''
+                };
+            });
+            
+            guardarDatos();
+            actualizarTablaIPV();
+            cerrarModalLimpiar();
+        }
+
+        // Cerrar modal al hacer clic fuera
+        document.getElementById('modalLimpiar').addEventListener('click', function(e) {
+            if (e.target === document.getElementById('modalLimpiar')) {
+                cerrarModalLimpiar();
+            }
+        });
+
+        // === EXPORTAR IPV A PDF ===
+        function exportarIPVaPDF() {
+            if (productos.length === 0) {
+                alert('No hay productos para exportar. Agregue productos primero.');
+                return;
+            }
+
+            var contenedor = document.getElementById('contenedorPrincipal');
+            var ipvTab = document.getElementById('ipv');
+
+            // Mostrar fecha en el PDF
+            var ahora = new Date();
+            var opcionesFecha = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+            document.getElementById('pdfFechaIPV').textContent = 'Fecha: ' + ahora.toLocaleDateString('es-ES', opcionesFecha);
+
+            contenedor.classList.add('pdf-export');
+            ipvTab.classList.add('pdf-target');
+
+            var opt = {
+                margin:      [0.3, 0.3, 0.3, 0.3],
+                filename:    'IPV_' + ahora.toISOString().slice(0,10) + '.pdf',
+                image:       { type: 'jpeg', quality: 1.0 },
+                html2canvas: { scale: 2, letterRendering: true, useCORS: true, logging: false, backgroundColor: '#ffffff' },
+                jsPDF:       { unit: 'in', format: 'a4', orientation: 'landscape' }
+            };
+
+            html2pdf().set(opt).from(contenedor).save().then(function() {
+                contenedor.classList.remove('pdf-export');
+                ipvTab.classList.remove('pdf-target');
+            });
+        }
+
+        // Funcion para calcular efectivo
+        function calcularEfectivo() {
+            var denominaciones = [1000, 500, 200, 100, 50, 20, 10];
+            var total = 0;
+            
+            denominaciones.forEach(function(denominacion) {
+                var cantidad = parseInt(document.getElementById('billete' + denominacion).value) || 0;
+                total += cantidad * denominacion;
+            });
+            
+            document.getElementById('totalEfectivo').textContent = '$' + total.toFixed(2);
+            calcularTotalRecaudado();
+        }
+
+        // Funcion para calcular total recaudado
+        function calcularTotalRecaudado() {
+            var totalEfectivo = parseFloat(document.getElementById('totalEfectivo').textContent.replace('$', '')) || 0;
+            var transferencia = parseFloat(document.getElementById('montoTransferencia').value) || 0;
+            var totalRecaudado = totalEfectivo + transferencia;
+            
+            document.getElementById('totalRecaudado').textContent = '$' + totalRecaudado.toFixed(2);
+        }
+
+        // Funcion para guardar datos en localStorage
+        function guardarDatos() {
+            localStorage.setItem('productos', JSON.stringify(productos));
+            localStorage.setItem('datosIPV', JSON.stringify(datosIPV));
+        }
+
+        // Cargar datos al iniciar
+        function cargarDatos() {
+            var datosGuardados = localStorage.getItem('datosIPV');
+            if (datosGuardados) {
+                datosIPV = JSON.parse(datosGuardados);
+            }
+            inicializarDatosIPV();
+            actualizarTablaProductos();
+            actualizarTablaIPV();
+            calcularEfectivo();
+        }
+
+        // Inicializar la aplicacion
+        cargarDatos();
+    </script>
+</body>
+</html>
