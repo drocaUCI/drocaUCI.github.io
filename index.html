@@ -6,7 +6,7 @@
   <title>Ventas Silenay · Control Diario y Mensual</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
   <!-- Librerías -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     * {
       margin: 0;
@@ -667,126 +667,6 @@
       display: none;
     }
 
-    /* ===== ESTILOS ESPECÍFICOS PARA PDF (fondo blanco, sin cortes) ===== */
-    .pdf-export {
-      background: white !important;
-      padding: 10px !important;
-    }
-
-    .pdf-export .sistema-ventas {
-      background: white !important;
-      box-shadow: none !important;
-      border: none !important;
-      padding: 0 !important;
-      backdrop-filter: none !important;
-    }
-
-    .pdf-export .nombre-sistema {
-      color: #0b2f5c !important;
-      text-shadow: none !important;
-      border-left-color: #0b2f5c !important;
-    }
-
-    .pdf-export .tabs-container,
-    .pdf-export .barra-herramientas,
-    .pdf-export .btn-accion,
-    .pdf-export .selector-dia,
-    .pdf-export .fecha-hora,
-    .pdf-export .modal-overlay,
-    .pdf-export .buscador-container,
-    .pdf-export .btn-eliminar-fila,
-    .pdf-export .toast-container {
-      display: none !important;
-    }
-
-    .pdf-export .resumen-box {
-      background: #f0f0f0 !important;
-      border: 1px solid #ccc !important;
-      box-shadow: none !important;
-      color: black !important;
-      backdrop-filter: none !important;
-    }
-
-    .pdf-export .resumen-item .etiqueta {
-      color: #0b2f5c !important;
-    }
-
-    .pdf-export .resumen-item .valor {
-      background: white !important;
-      box-shadow: none !important;
-      border: 1px solid #999 !important;
-      color: black !important;
-    }
-
-    .pdf-export .tabla-wrapper {
-      background: white !important;
-      border: 1px solid #999 !important;
-      box-shadow: none !important;
-    }
-
-    .pdf-export table {
-      background: white !important;
-      color: black !important;
-      min-width: 100% !important;
-      table-layout: fixed !important;
-    }
-
-    .pdf-export th {
-      background: #0b2742 !important;
-      color: white !important;
-      border: 1px solid #2f8ad4 !important;
-      font-size: 12px !important;
-      padding: 6px 4px !important;
-    }
-
-    .pdf-export td {
-      background: white !important;
-      color: black !important;
-      border: 1px solid #999 !important;
-      font-size: 11px !important;
-      padding: 4px !important;
-    }
-
-    .pdf-export .input-tabla,
-    .pdf-export .input-producto,
-    .pdf-export .input-codigo {
-      background: transparent !important;
-      border: none !important;
-      border-radius: 0 !important;
-      box-shadow: none !important;
-      color: black !important;
-      font-size: 11px !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      width: 100% !important;
-      -webkit-appearance: none !important;
-      appearance: none !important;
-      pointer-events: none !important;
-    }
-
-    .pdf-export .footer-ucinf {
-      background: #f0f0f0 !important;
-      color: #0b2f5c !important;
-      border-top: 1px solid #ccc !important;
-    }
-
-    .pdf-export .subtitulo-tabla {
-      color: #0b2f5c !important;
-      background: #f0f0f0 !important;
-      border-left-color: #0b2f5c !important;
-    }
-
-    .pdf-export #tablaDiario th:nth-child(1),
-    .pdf-export #tablaDiario td:nth-child(1) { width: 35% !important; }
-    .pdf-export #tablaDiario th:nth-child(2),
-    .pdf-export #tablaDiario td:nth-child(2) { width: 20% !important; }
-    .pdf-export #tablaDiario th:nth-child(3),
-    .pdf-export #tablaDiario td:nth-child(3) { width: 20% !important; }
-    .pdf-export #tablaDiario th:nth-child(4),
-    .pdf-export #tablaDiario td:nth-child(4) { width: 20% !important; }
-    .pdf-export #tablaDiario th:nth-child(5),
-    .pdf-export #tablaDiario td:nth-child(5) { width: 5% !important; }
-
     /* ===== RESPONSIVE ===== */
     @media (max-width: 900px) {
       body { padding: 0.6rem 0.4rem; justify-content: flex-start; }
@@ -1391,23 +1271,130 @@
       e.target.value = '';
     });
 
+    // --- Helper: generar PDF con jsPDF directamente ---
+    function generarPDF(titulo, resumenItems, tablaHeaders, tablaFilas, filename) {
+      var jsPDF = window.jspdf.jsPDF;
+      var doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      var pageW = doc.internal.pageSize.getWidth();
+      var marginL = 15, marginR = 15;
+      var contentW = pageW - marginL - marginR;
+      var y = 18;
+
+      // Título
+      doc.setFontSize(16);
+      doc.setTextColor(11, 39, 66);
+      doc.setFont('helvetica', 'bold');
+      doc.text(titulo, pageW / 2, y, { align: 'center' });
+      y += 10;
+
+      // Resumen
+      doc.setFillColor(235, 240, 248);
+      doc.roundedRect(marginL, y, contentW, 18, 3, 3, 'F');
+      var resW = contentW / resumenItems.length;
+      resumenItems.forEach(function(item, i) {
+        var cx = marginL + resW * i + resW / 2;
+        doc.setFontSize(8);
+        doc.setTextColor(100, 100, 100);
+        doc.setFont('helvetica', 'normal');
+        doc.text(item.label, cx, y + 6, { align: 'center' });
+        doc.setFontSize(14);
+        doc.setTextColor(11, 39, 66);
+        doc.setFont('helvetica', 'bold');
+        doc.text(item.value, cx, y + 14, { align: 'center' });
+      });
+      y += 24;
+
+      // Tabla - cabecera
+      var colW = [];
+      var totalCols = tablaHeaders.length;
+      if (totalCols === 4) { colW = [contentW * 0.38, contentW * 0.20, contentW * 0.20, contentW * 0.22]; }
+      else if (totalCols === 5) { colW = [contentW * 0.25, contentW * 0.20, contentW * 0.20, contentW * 0.20, contentW * 0.15]; }
+      else { tablaHeaders.forEach(function() { colW.push(contentW / totalCols); }); }
+
+      var rowH = 8;
+      doc.setFillColor(11, 39, 66);
+      doc.rect(marginL, y, contentW, rowH, 'F');
+      doc.setFontSize(9);
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      var x = marginL;
+      tablaHeaders.forEach(function(h, i) {
+        doc.text(h, x + colW[i] / 2, y + 5.5, { align: 'center' });
+        x += colW[i];
+      });
+      y += rowH;
+
+      // Tabla - filas
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      tablaFilas.forEach(function(fila, idx) {
+        if (y > 270) {
+          doc.addPage();
+          y = 15;
+        }
+        if (idx % 2 === 0) {
+          doc.setFillColor(255, 255, 255);
+        } else {
+          doc.setFillColor(245, 248, 252);
+        }
+        doc.rect(marginL, y, contentW, rowH, 'F');
+        doc.setDrawColor(200, 200, 200);
+        doc.rect(marginL, y, contentW, rowH, 'S');
+
+        doc.setTextColor(30, 30, 30);
+        x = marginL;
+        fila.forEach(function(celda, i) {
+          var align = (i === 0) ? 'left' : 'center';
+          var tx = (i === 0) ? x + 2 : x + colW[i] / 2;
+          doc.text(String(celda), tx, y + 5.5, { align: align });
+          x += colW[i];
+        });
+        y += rowH;
+      });
+
+      // Footer
+      y += 6;
+      doc.setDrawColor(180, 180, 180);
+      doc.line(marginL, y, pageW - marginR, y);
+      y += 5;
+      doc.setFontSize(8);
+      doc.setTextColor(120, 120, 120);
+      doc.setFont('helvetica', 'italic');
+      doc.text('Universidad de las Ciencias Informaticas - Ing. Damian Roca Mestril', pageW / 2, y, { align: 'center' });
+
+      doc.save(filename);
+      mostrarToast('PDF exportado', 'success');
+    }
+
     // --- Exportar PDF Diario ---
     document.getElementById('btnExportarPDFDiario').addEventListener('click', function() {
-      var elemento = document.getElementById('contenedorPrincipal');
-      elemento.classList.add('pdf-export');
-      
-      var opt = {
-        margin:        [0.3, 0.3, 0.3, 0.3],
-        filename:      'ventas_roca_' + selectorDia.value + '.pdf',
-        image:         { type: 'jpeg', quality: 1.0 },
-        html2canvas:   { scale: 2, letterRendering: true, useCORS: true, logging: false, backgroundColor: '#ffffff' },
-        jsPDF:         { unit: 'in', format: 'a4', orientation: 'portrait' }
-      };
-      
-      html2pdf().set(opt).from(elemento).save().then(function() {
-        elemento.classList.remove('pdf-export');
-        mostrarToast('PDF exportado', 'success');
+      var filas = document.querySelectorAll('#cuerpoTablaDiario tr');
+      var tablaFilas = [];
+      filas.forEach(function(fila) {
+        var inputs = fila.querySelectorAll('input');
+        if (inputs.length >= 3) {
+          var prod = inputs[0].value.trim();
+          var total = inputs[1].value || '0.00';
+          var inv = inputs[2].value || '0.00';
+          var cod = inputs[3] ? inputs[3].value.trim() : '';
+          if (prod) {
+            tablaFilas.push([prod, total, inv, cod]);
+          }
+        }
       });
+
+      var fechaLabel = document.getElementById('diaActualLabel').textContent;
+      generarPDF(
+        'VENTAS SILENAY - ' + fechaLabel,
+        [
+          { label: 'TOTAL', value: '$' + sumaTotalDiario.textContent },
+          { label: 'INVERSION', value: '$' + sumaInversionDiario.textContent },
+          { label: 'GANANCIA', value: '$' + gananciaDiario.textContent }
+        ],
+        ['PRODUCTO', 'TOTAL', 'INVERSION', 'CODIGOS'],
+        tablaFilas,
+        'ventas_roca_' + selectorDia.value + '.pdf'
+      );
     });
 
     document.getElementById('btnEnviarWhatsAppDiario').addEventListener('click', function() {
@@ -1427,21 +1414,32 @@
     });
 
     document.getElementById('btnExportarPDFMensual').addEventListener('click', function() {
-      var elemento = document.getElementById('contenedorPrincipal');
-      elemento.classList.add('pdf-export');
-      
-      var opt = {
-        margin:        [0.3, 0.3, 0.3, 0.3],
-        filename:      'ventas_roca_resumen_' + selectorMes.value + '.pdf',
-        image:         { type: 'jpeg', quality: 1.0 },
-        html2canvas:   { scale: 2, letterRendering: true, useCORS: true, logging: false, backgroundColor: '#ffffff' },
-        jsPDF:         { unit: 'in', format: 'a4', orientation: 'portrait' }
-      };
-      
-      html2pdf().set(opt).from(elemento).save().then(function() {
-        elemento.classList.remove('pdf-export');
-        mostrarToast('PDF mensual exportado', 'success');
+      var filasMensual = document.querySelectorAll('#cuerpoTablaMensual tr');
+      var tablaFilas = [];
+      filasMensual.forEach(function(fila) {
+        var celdas = fila.querySelectorAll('td');
+        if (celdas.length >= 5) {
+          tablaFilas.push([
+            celdas[0].textContent.trim(),
+            celdas[1].textContent.trim(),
+            celdas[2].textContent.trim(),
+            celdas[3].textContent.trim(),
+            celdas[4].textContent.trim()
+          ]);
+        }
       });
+
+      generarPDF(
+        'VENTAS SILENAY - Resumen ' + selectorMes.value,
+        [
+          { label: 'TOTAL MES', value: '$' + sumaTotalMensual.textContent },
+          { label: 'INVERSION MES', value: '$' + sumaInversionMensual.textContent },
+          { label: 'GANANCIA MES', value: '$' + gananciaMensual.textContent }
+        ],
+        ['DIA', 'TOTAL', 'INVERSION', 'GANANCIA', '# PRODUCTOS'],
+        tablaFilas,
+        'ventas_roca_resumen_' + selectorMes.value + '.pdf'
+      );
     });
 
     document.getElementById('btnEnviarWhatsAppMensual').addEventListener('click', function() {
