@@ -790,6 +790,13 @@
         actualizarReloj();
         setInterval(actualizarReloj, 1000);
 
+        // Utilidad para escapar HTML y prevenir XSS
+        function escapeHTML(str) {
+            var div = document.createElement('div');
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
+        }
+
         // Inicializar datos IPV cuando se cargan productos
         function inicializarDatosIPV() {
             productos.forEach(function(producto) {
@@ -835,6 +842,13 @@
             
             if (editIndex >= 0) {
                 var productoAntiguo = productos[editIndex];
+
+                if (productoAntiguo.nombre.toLowerCase() !== nombre.toLowerCase() &&
+                    productos.some(function(p, i) { return i !== editIndex && p.nombre.toLowerCase() === nombre.toLowerCase(); })) {
+                    alert('Ya existe un producto con ese nombre');
+                    return;
+                }
+
                 productos[editIndex] = { nombre: nombre, precio: precio };
                 
                 if (productoAntiguo.nombre !== nombre) {
@@ -904,9 +918,10 @@
             } else {
                 mensaje.style.display = 'none';
                 tbody.innerHTML = productos.map(function(producto, index) {
+                    var nombreEscapado = escapeHTML(producto.nombre);
                     return '<tr>' +
                         '<td>' + (index + 1) + '</td>' +
-                        '<td>' + producto.nombre + '</td>' +
+                        '<td>' + nombreEscapado + '</td>' +
                         '<td>$' + producto.precio.toFixed(2) + '</td>' +
                         '<td><div class="acciones-cell">' +
                             '<button class="edit" onclick="editarProducto(' + index + ')">Editar</button>' +
@@ -955,12 +970,14 @@
                 var entradasDisplay = datos.entradas === '' ? '' : datos.entradas;
                 var umFinalDisplay = datos.umFinal === '' ? '' : datos.umFinal;
                 
+                var nombreEsc = escapeHTML(producto.nombre);
+                var nombreAttr = nombreEsc.replace(/'/g, '&#39;');
                 return '<tr>' +
-                    '<td style="font-weight: bold;">' + producto.nombre + '</td>' +
-                    '<td><input type="number" value="' + umInicioDisplay + '" placeholder="0" onchange="actualizarDatoIPV(\'' + producto.nombre.replace(/'/g, "\\'") + '\', \'umInicio\', this.value)" min="0"></td>' +
-                    '<td><input type="number" value="' + entradasDisplay + '" placeholder="0" onchange="actualizarDatoIPV(\'' + producto.nombre.replace(/'/g, "\\'") + '\', \'entradas\', this.value)" min="0"></td>' +
+                    '<td style="font-weight: bold;">' + nombreEsc + '</td>' +
+                    '<td><input type="number" value="' + umInicioDisplay + '" placeholder="0" onchange="actualizarDatoIPV(\'' + nombreAttr + '\', \'umInicio\', this.value)" min="0"></td>' +
+                    '<td><input type="number" value="' + entradasDisplay + '" placeholder="0" onchange="actualizarDatoIPV(\'' + nombreAttr + '\', \'entradas\', this.value)" min="0"></td>' +
                     '<td class="readonly">' + umActual + '</td>' +
-                    '<td><input type="number" value="' + umFinalDisplay + '" placeholder="0" onchange="actualizarDatoIPV(\'' + producto.nombre.replace(/'/g, "\\'") + '\', \'umFinal\', this.value)" min="0"></td>' +
+                    '<td><input type="number" value="' + umFinalDisplay + '" placeholder="0" onchange="actualizarDatoIPV(\'' + nombreAttr + '\', \'umFinal\', this.value)" min="0"></td>' +
                     '<td class="readonly">' + ventas + '</td>' +
                     '<td class="readonly">$' + importe.toFixed(2) + '</td>' +
                 '</tr>';
